@@ -19,16 +19,16 @@ namespace GloboCrypto.WebAPI.Controllers
 
         [HttpPost("subscribe")]
         [Authorize]
-        public async Task<NotificationSubscription> Subscribe(string userId, NotificationSubscription subscription)
+        public async Task<NotificationSubscription> Subscribe(NotificationSubscription subscription)
         {
-            return await _notificationService.SubscribeAsync(userId, subscription);
+            return await _notificationService.SubscribeAsync(User.Identity.Name, subscription);
         }
 
         [HttpPut("subscribe")]
         [Authorize]
-        public async Task UpdateSubscription(string userId, string coinIds)
+        public async Task UpdateSubscription(string coinIds)
         {
-            await _notificationService.UpdateSubscriptionAsync(userId, coinIds);
+            await _notificationService.UpdateSubscriptionAsync(User.Identity.Name, coinIds);
         }
 
         [HttpGet("check-notify")]

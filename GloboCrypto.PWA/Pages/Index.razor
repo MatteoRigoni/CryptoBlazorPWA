@@ -107,6 +107,10 @@ else
         if (fromAPI)
         {
             var coinList = string.Join(',', coins.Select(coin => coin.Id).ToArray());
+
+            if (localSettings.NotificationsEnabled)
+                await CoinAPIService.UpdateSubscriptions(coinList);
+
             coinPrices = (coins.Count > 0) ? await CoinAPIService.GetCoinPriceInfo(coinList, localSettings.Currency, localSettings.PriceChangeInterval) as List<CoinPriceInfo> : new List<CoinPriceInfo>();
             //  Set the cache of coins
             await AppStorageService.SaveCoinTrackerCacheAsync(new CoinTrackerCache

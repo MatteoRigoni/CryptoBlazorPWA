@@ -58,3 +58,21 @@ async function onFetch(event) {
 
     return cachedResponse || fetch(event.request);
 }
+
+self.addEventListener('push', event => {
+    const payload = event.data.json();
+    event.waitUntil(
+        self.registration.showNotification('Globo Crypto', {
+            body: payload.message,
+            icon: 'favicon-32x32.png',
+            image: payload.iconurl,
+            vibrate: [100, 50, 100],
+            data: { url: payload.url }
+        })
+    );
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    event.waitUntil(clients.openWindow(event.notification.data.url));
+});

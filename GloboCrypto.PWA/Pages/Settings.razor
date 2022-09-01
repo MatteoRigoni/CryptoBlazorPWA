@@ -159,34 +159,34 @@ else
     private async void OnToggleNotifications(bool val)
     {
         localSettings.NotificationsEnabled = val;
-        //_ = RequestNotificationSubscriptionAsync();
+        _ = RequestNotificationSubscriptionAsync();
         await SaveSettings();
     }
 
-    //async Task RequestNotificationSubscriptionAsync()
-    //{
-    //    if (localSettings.NotificationsEnabled)
-    //    {
-    //        var coinSubs = await AppStorageService.GetCoinListAsync();
-    //        var coinIds = coinSubs.Select(coin => coin.Id).ToList();
-    //        var subscription = await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
-    //        if (subscription != null)
-    //        {
-    //            subscription.CoinIds = coinIds;
-    //            try
-    //            {
-    //                await CoinAPIService.SubscribeToNotifications(subscription); //- send subscription to the API
-    //            }
-    //            catch (Exception ex)
-    //            {
-    //            }
-    //        }
-    //    }
-    //    else
-    //    {
-    //        await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.removeSubscription");
-    //    }
-    //}
+    async Task RequestNotificationSubscriptionAsync()
+    {
+        if (localSettings.NotificationsEnabled)
+        {
+            var coinSubs = await AppStorageService.GetCoinListAsync();
+            var coinIds = coinSubs.Select(coin => coin.Id).ToList();
+            var subscription = await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
+            if (subscription != null)
+            {
+                subscription.CoinIds = coinIds;
+                try
+                {
+                    await CoinAPIService.SubscribeToNotifications(subscription); //- send subscription to the API
+                }
+                catch (Exception ex)
+                {
+                }
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.removeSubscription");
+        }
+    }
 
     private async void OnToggleAutoRefresh(bool val)
     {

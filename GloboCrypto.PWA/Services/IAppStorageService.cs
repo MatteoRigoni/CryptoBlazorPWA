@@ -1,4 +1,5 @@
-﻿using GloboCrypto.Model.Data;
+﻿using GloboCrypto.Model.Authentication;
+using GloboCrypto.Model.Data;
 using GloboCrypto.PWA.Models;
 
 namespace GloboCrypto.PWA.Services
@@ -13,5 +14,7 @@ namespace GloboCrypto.PWA.Services
         Task<LocalSettings> GetLocalSettingsAsync();
         Task SaveLocalSettingsAsync(LocalSettings settings);
         Task<bool> IsCacheInvalidAsync();
+        Task<AuthToken> GetSavedAuthToken();
+        Task SaveAuthToken(AuthToken authToken);
     }
 }

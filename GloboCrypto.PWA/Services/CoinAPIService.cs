@@ -1,4 +1,5 @@
 ﻿using GloboCrypto.Model.Data;
+using GloboCrypto.Model.Notifications;
 using System.Net.Http.Json;
 
 namespace GloboCrypto.PWA.Services
@@ -27,6 +28,17 @@ namespace GloboCrypto.PWA.Services
         {
             string url = $"{_appSettings.APIHost}/api/coin/prices/{coinIds}?currency={currency}&intervals={intervals}";
             return await _httpClient.GetFromJsonAsync<IEnumerable<CoinPriceInfo>>(url);
+        }
+
+        public async Task SubscribeToNotifications(NotificationSubscription subscription)
+        {
+            var response = await _httpClient.PutAsJsonAsync($"{_appSettings.APIHost}/api/notification/subscribe", subscription);
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task UpdateSubscriptions(string coinIds)
+        {
+            var response = await _httpClient.GetAsync($"{_appSettings.APIHost}/api/notification/update-subscription?coinIds={coinIds}");
         }
     }
 }

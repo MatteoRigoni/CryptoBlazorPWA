@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using GloboCrypto.Model.Authentication;
 using GloboCrypto.Model.Data;
 using GloboCrypto.PWA.Models;
 
@@ -61,6 +62,16 @@ namespace GloboCrypto.PWA.Services
             var newId = Guid.NewGuid().ToString();
             await _localStorage.SetItemAsync(_appSettings.Id, newId);
             return newId;
+        }
+
+        public async Task<AuthToken> GetSavedAuthToken()
+        {
+            return await _localStorage.GetItemAsync<AuthToken>(_appSettings.AuthToken) ?? null;
+        }
+
+        public async Task SaveAuthToken(AuthToken authToken)
+        {
+            await _localStorage.SetItemAsync(_appSettings.AuthToken, authToken);
         }
     }
 }
