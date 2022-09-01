@@ -1,0 +1,89 @@
+﻿@page "/events"
+
+@using GloboCrypto.WebAPI.Services.Notifications
+@using GloboCrypto.WebAPI.Services.Events
+@using GloboCrypto.WebAPI.Services.Models
+@using GloboCrypto.WebAPI.Models;
+@using GloboCrypto.Model.Data
+
+@inject IEventService Log
+@inject INotificationService NotificationService
+
+<h1>Events</h1>
+
+@if (LogEntries == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div id="table-filter" class="form-row" style="width: 100%">
+        <MudChipSet MultiSelection="true" Filter="true" SelectedChipsChanged="ChipsChanged">
+            @foreach (EventLogEntryType entryType in Enum.GetValues(typeof(EventLogEntryType)))
+            {
+                <MudChip Text="@entryType.ToString()" Default="true"></MudChip>
+            }
+        </MudChipSet>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Type</th>
+                <th>User</th>
+                <th>Coin</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var logEntry in LogEntries)
+            {
+                <tr>
+                    <td width="88px">@logEntry.DateTime</td>
+                    <td width="100px">@logEntry.EventType</td>
+                    <td width="140px">@logEntry.UserId</td>
+                    <td width="140px">@logEntry.CoinId</td>
+                    @if (logEntry.EventType == EventLogEntryType.Error)
+                    {
+                        <td>
+                            <MudExpansionPanels DisableBorders="true" Elevation="0">
+                                <MudExpansionPanel Text="@logEntry.Message">@logEntry.Exception</MudExpansionPanel>
+                            </MudExpansionPanels>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>@logEntry.Message</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<EventLogEntry> LogEntries = null;
+    private string filterList;
+
+    private MudChip[] selected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var logEntries = await Log.QueryEvents(evt => evt.Id > 0);
+        LogEntries = logEntries.OrderByDescending(x => x.DateTime).Take(100);
+    }
+
+    private async Task ChipsChanged(MudChip[] obj)
+    {
+        //  Refetch with new filter
+        selected = obj;
+        if (selected != null)
+        {
+
+            var chipList = selected.Select(chip => Enum.Parse<EventLogEntryType>(chip.Text));
+            var logEntries = await Log.GetEventsByTypes(chipList);
+            LogEntries = logEntries.OrderByDescending(x => x.DateTime).Take(100);
+        }
+    }
+
+}

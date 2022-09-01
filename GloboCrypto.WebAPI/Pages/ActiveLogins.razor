@@ -1,0 +1,44 @@
+﻿@page "/active-logins"
+
+@using GloboCrypto.WebAPI.Services.Authentication;
+@using GloboCrypto.WebAPI.Services.Models;
+
+@inject IAuthenticationService AuthService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h1>Active Logins</h1>
+
+@if (RegisteredInstances == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UserId</th>
+                <th>Last Login</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var instance in RegisteredInstances)
+            {
+                <tr>
+                    <td>@instance.Id</td>
+                    <td width="120px">@instance.LastLogin</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<RegisteredInstance> RegisteredInstances = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var instances = await AuthService.GetRegisteredInstances();
+        RegisteredInstances = instances.OrderByDescending(instance => instance.LastLogin);
+    }
+}

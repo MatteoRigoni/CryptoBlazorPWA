@@ -1,0 +1,55 @@
+﻿@page "/subscriptions"
+
+@using GloboCrypto.WebAPI.Services
+@using GloboCrypto.Model.Notifications;
+@using GloboCrypto.Model.Data;
+@using GloboCrypto.WebAPI.Services.Notifications;
+
+@inject INotificationService NotificationService
+
+<h1>Subscriptions</h1>
+
+@if (SubscriptionList == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>UserId</th>
+                <th>Coins</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var subscription in SubscriptionList)
+            {
+                <tr>
+                    <td width="30px">@subscription.UserId</td>
+                    <td width="100px">@subscription.CoinIds.Count Coin(s)</td>
+                </tr>
+                <tr>
+                    <td/>
+                    <td colspan="2">
+                        @foreach(var coin in subscription.CoinIds)
+                        {
+                            <div style="padding-bottom: 5px">
+                                <a>&nbsp;@coin</a>
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<NotificationSubscription> SubscriptionList = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SubscriptionList = await NotificationService.GetSubscriptions();
+    }
+}

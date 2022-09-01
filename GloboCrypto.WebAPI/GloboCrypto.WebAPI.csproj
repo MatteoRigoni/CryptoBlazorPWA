@@ -7,8 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AspNetCore.Proxy" Version="4.4.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.8" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.22.1" />
+    <PackageReference Include="MudBlazor" Version="6.0.15" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.22.1" />
   </ItemGroup>
@@ -16,6 +18,10 @@
   <ItemGroup>
     <ProjectReference Include="..\GloboCrypto.Model\GloboCrypto.Model.csproj" />
     <ProjectReference Include="..\GloboCrypto.WebAPI.Services\GloboCrypto.WebAPI.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
   </ItemGroup>
 
 </Project>
