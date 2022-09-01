@@ -1,5 +1,6 @@
 ﻿using GloboCrypto.Model.Notifications;
 using GloboCrypto.WebAPI.Services.Notifications;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,12 +18,14 @@ namespace GloboCrypto.WebAPI.Controllers
         }
 
         [HttpPost("subscribe")]
+        [Authorize]
         public async Task<NotificationSubscription> Subscribe(string userId, NotificationSubscription subscription)
         {
             return await _notificationService.SubscribeAsync(userId, subscription);
         }
 
         [HttpPut("subscribe")]
+        [Authorize]
         public async Task UpdateSubscription(string userId, string coinIds)
         {
             await _notificationService.UpdateSubscriptionAsync(userId, coinIds);

@@ -1,5 +1,6 @@
 ﻿using GloboCrypto.Model.Data;
 using GloboCrypto.WebAPI.Services.Coins;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +31,7 @@ namespace GloboCrypto.WebAPI.Controllers
 
         [HttpGet("prices/{coinIds}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]        
         public async Task<ActionResult<CoinInfo>> GetPrices([FromRoute] string coinIds, string currency, string intervals)
         {
             var result = await _coinService.GetCoinPriceInfo(coinIds, currency, intervals);
