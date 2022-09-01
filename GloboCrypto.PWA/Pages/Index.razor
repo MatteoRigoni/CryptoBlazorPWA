@@ -10,6 +10,7 @@
 @inject ICoinAPIService CoinAPIService
 @inject IAppStorageService AppStorageService
 @inject NavigationManager NavigationManager
+@inject ILogger Logger 
 
 <CoinDetailsModal @ref="CoinDialog" CloseEventCallback="@CoinDialog_OnDialogClose"></CoinDetailsModal>
 
@@ -98,6 +99,8 @@ else
 
     private async Task UpdateCoinInfo(bool fromAPI = false)
     {
+        Logger.LogWarning("*** Entered UpdateCoinInfo");
+
         isRefreshing = true;
         StateHasChanged();
         coins = await AppStorageService.GetCoinListAsync() ?? new List<CoinInfo>();
