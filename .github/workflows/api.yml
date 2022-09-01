@@ -5,7 +5,7 @@ on:
     branches: [ api ]
 
 env:
-  AZURE_WEBAPP_NAME: BeauCrypto
+  AZURE_WEBAPP_NAME: GloboCryptoAPIs
   AZURE_WEBAPP_PACKAGE_PATH: GloboCrypto.WebAPI/publish
   AZURE_WEBAPP_PUBLISH_PROFILE: ${{secrets.AZURE_API_PROFILE}}  
   CONFIGURATION: Release
