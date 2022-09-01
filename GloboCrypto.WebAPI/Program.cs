@@ -13,6 +13,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "Open",
+        builder => builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IHttpService, HttpService>();
 builder.Services.AddSingleton<ILocalDbService>(new LocalDbService("CoinAPIData.db"));
@@ -34,5 +41,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseCors("Open");
 
 app.Run();

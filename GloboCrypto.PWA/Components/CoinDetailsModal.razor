@@ -1,0 +1,96 @@
+﻿@using GloboCrypto.PWA.Services
+@using GloboCrypto.Model.Data
+
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+@inject IAppStorageService AppStorageService
+@inject ICoinAPIService CoinAPIService
+
+@if (ShowDialog)
+{
+    <div class="modal fade show d-block" id="coinDialog" tabindex="-1" role="dialog">
+        <div class="modal-dialog-scrollable" role="document">
+            <div class="modal-content coinmodal">
+                <div class="modal-header">
+                    @if (CoinIsInList)
+                    {
+                        <button class="btn btn-danger btn-circle btn-lg" @onclick="@(() => RemoveCoinFromList())" @onclick:stopPropagation="true" aria-label="Remove from list"><span class="oi oi-trash"></span></button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-action-pos btn-circle btn-lg" @onclick="@(() => AddCoinToList())" aria-label="Add to list"><span class="oi oi-plus"></span></button>
+                    }
+                    <button type="button" class="btn btn-light btn-circle btn-lg" @onclick="@(() => Close())" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true" class="oi oi-x"></span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (Coin == null)
+                    {
+                        <p><em>Fetching Coin Details...</em></p>
+                    }
+                    else
+                    {
+                        <img src="@Coin.LogoUrl" width=100px height=100px alt="Coin Icon" />
+                        <h2>@Coin.Name</h2>
+                        @*<p class="coin-description">@Coin.Description</p>*@
+                        <p class="coin-description">
+                            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+}
+
+@code {
+    [Parameter]
+    public string CoinId { get; set; }
+    [Parameter]
+    public EventCallback<bool> CloseEventCallback { get; set; } // to notify parent on closing modal
+
+    private CoinInfo Coin;
+    private bool CoinIsInList { get; set; }
+    private bool ShowDialog { get; set; }
+
+    public async Task Close()
+    {
+        ShowDialog = false;
+        await CloseEventCallback.InvokeAsync(true);
+        StateHasChanged();
+    }
+
+    public async Task Show(string id)
+    {
+        CoinId = id;
+        Coin = null;
+        ShowDialog = true;
+        Coin = (await CoinAPIService.GetCoinInfo(CoinId));
+        var coinIds = await AppStorageService.GetCoinListAsync() ?? new List<CoinInfo>();
+        CoinIsInList = coinIds.FirstOrDefault(coin => coin.Id == CoinId) != null;
+        StateHasChanged();
+    }
+
+    public async void AddCoinToList()
+    {
+        var coinIds = await AppStorageService.GetCoinListAsync() ?? new List<CoinInfo>();
+        coinIds.Add(Coin);
+        await AppStorageService.SaveCoinListAsync(coinIds);
+        await Close();
+        ToastService.ShowSuccess($"{Coin.Name} added to your list");
+    }
+
+    public async void RemoveCoinFromList()
+    {
+        var coinIds = await AppStorageService.GetCoinListAsync() ?? new List<CoinInfo>();
+
+        var listCoin = coinIds.FirstOrDefault(coin => coin.Id == CoinId);
+        coinIds.Remove(listCoin);
+
+        await AppStorageService.SaveCoinListAsync(coinIds);
+        await Close();
+        ToastService.ShowSuccess($"{Coin.Name} removed to your list");
+    }
+}

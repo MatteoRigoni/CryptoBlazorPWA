@@ -1,0 +1,101 @@
+﻿@page "/search"
+
+@using GloboCrypto.PWA.Services
+@using GloboCrypto.PWA.Components
+@using GloboCrypto.Model.Data
+
+@inject ICoinAPIService CoinAPIService
+@inject NavigationManager NavigationManager
+
+<CoinDetailsModal @ref="CoinDialog" CloseEventCallback="@CoinDialog_OnDialogClose" />
+
+
+
+<div id="homebutton" >
+    <span class="h1">Search</span>
+    <button class="btn btn-primary btn-round btn-lg float-end" @onclick="NavigateToHome" aria-label="Navigate to home"><span class="oi oi-home"></span></button>
+</div>
+
+<section style="margin-top: 20px;margin-bottom: 10px">
+    <input type="text" class="form-control" placeholder="Search by name" @ref="searchRef"
+           @bind-value="@SearchTerm" @bind-value:event="oninput" @onkeyup="OnKeyUp" autofocus />
+</section>
+
+@if (SearchTerm == null || SearchTerm?.Length == 0)
+{
+    <p><em>Enter a coin code to search</em></p>
+}
+else if (coins == null)
+{
+    <p><em>Searching for coins...</em></p>
+}
+else
+{
+    <div class="table-wrapper-scroll-y my-custom-scrollbar">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var coin in coins)
+                {
+                    <tr @onclick="@(() => SelectCoin(coin.Id))">
+                        <td width="88px"><img src="@coin.LogoUrl" alt="image for @coin.Name" width=64px height=64px /></td>
+                        <td><h5>@coin.Name</h5><span>@coin.Id</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    public CoinDetailsModal CoinDialog;
+    ElementReference searchRef;
+    private IEnumerable<CoinInfo> coins;
+    public string SearchTerm { get; set; }
+
+    async Task OnKeyUp(KeyboardEventArgs eventArgs)
+    {
+        try
+        {
+            if (SearchTerm.Length > 2)
+            {
+                var coin = await CoinAPIService.GetCoinInfo(SearchTerm);
+                if (coin != null)
+                    coins = new List<CoinInfo> { coin };
+            }
+            else
+                coins = null;
+        }
+        catch { }    // Add some error handling here later
+    }
+
+    private void NavigateToHome()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await searchRef.FocusAsync();
+    }
+
+    protected async Task OpenDialog(string coinId)
+    {
+        await CoinDialog.Show(coinId);
+    }
+
+    public async void CoinDialog_OnDialogClose()
+    {
+        StateHasChanged();
+    }
+
+    private async Task SelectCoin(string coinId)
+    {
+        await OpenDialog(coinId);
+    }
+}

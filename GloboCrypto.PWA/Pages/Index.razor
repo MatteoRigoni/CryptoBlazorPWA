@@ -1,0 +1,171 @@
+﻿@page "/"
+
+@using GloboCrypto.PWA.Services
+@using GloboCrypto.PWA.Models
+@using GloboCrypto.PWA.Components
+@using GloboCrypto.Model.Data
+@using System.Timers
+
+@inject IAppSettings appsettings
+@inject ICoinAPIService CoinAPIService
+@inject IAppStorageService AppStorageService
+@inject NavigationManager NavigationManager
+
+<CoinDetailsModal @ref="CoinDialog" CloseEventCallback="@CoinDialog_OnDialogClose"></CoinDetailsModal>
+
+<div id="header-block" style="height:60px; width:100%;">
+    <button class="btn btn-secondary btn-circle btn-lg" @onclick="NavigateToSettings" aria-label="Open Settings"><span class="oi oi-cog"></span></button>
+
+    <span class="float-end">
+        @if (localSettings != null)
+        {
+            <button class="btn btn-light btn-sm" disabled>@localSettings.Currency</button>
+            <button class="btn btn-light btn-sm" disabled>@localSettings.PriceChangeInterval</button>
+            <span>&nbsp;</span>
+        }
+
+        <button class="btn btn-primary btn-circle btn-lg" @onclick="NavigateToSearch" aria-label="Navigate to Search"><span class="oi oi-magnifying-glass"></span></button>
+        <button class="btn btn-info btn-circle btn-lg" @onclick="@(() => UpdateCoinInfo(true))" aria-label="Refresh Coin Prices"><span class="oi oi-reload"></span></button>
+    </span>
+   
+</div>
+
+<div class="status-bar fixed-bottom mx-5 my-2 text-center">
+    <div>Globo Crypto v1</div>
+    <div class="spinner" style="background-color: red; display: @(isRefreshing ? "block" : "none")"></div>
+    <label><span class="oi oi-timer"></span> @lastUpdate</label>
+</div>
+
+@if (coinPrices == null)
+{
+    <p><em>Loading Coin prices...</em></p>
+}
+else if (coinPrices.Count == 0)
+{
+    <p><em>No coins selected, click the <span class="oi oi-magnifying-glass"></span> button to find coins</em></p>
+}
+else
+{
+    <hr/>
+    <div class="table-wrapper-scroll-y my-custom-scrollbar">
+        <table class="table">
+            <tbody>
+                @foreach (var coinPrice in coinPrices)
+                {
+                    var coinInfo = coins.FirstOrDefault(x => x.Id == coinPrice.Id);
+                    <tr @onclick="@(() => OpenDialog(@coinInfo.Id))">
+                        <td width="88px"><img src="@coinInfo.LogoUrl" width=64px height=64px alt="image for @coinInfo.Name" /></td>
+                        <td><h5>@coinInfo.Name</h5><span>@coinInfo.Id</span></td>
+                        <td width="88px"><h5>@coinPrice.Price.FormatPrice()</h5><span>@((MarkupString)TrendIndicator(coinInfo.Id)) @coinPrice.Intervals[localSettings.PriceChangeInterval].PriceChangePercent.FormatPct()%</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<CoinInfo> coins;
+    private List<CoinPriceInfo> coinPrices;
+    private Timer refreshTimer;
+    private bool isRefreshing;
+    private string lastUpdate;
+    public CoinDetailsModal CoinDialog { get; set; }
+    private LocalSettings localSettings;
+
+    protected async Task OpenDialog(string coinId)
+    {
+        await CoinDialog.Show(coinId);
+    }
+
+    public async void CoinDialog_OnDialogClose()
+    {
+        var cacheInvalid = await AppStorageService.IsCacheInvalidAsync();
+        await UpdateCoinInfo(cacheInvalid);
+    }
+
+    private void NavigateToSearch()
+    {
+        refreshTimer?.Stop();
+        NavigationManager.NavigateTo("search");
+    }
+
+    private void NavigateToSettings()
+    {
+        refreshTimer?.Stop();
+        NavigationManager.NavigateTo("settings");
+    }
+
+    private async Task UpdateCoinInfo(bool fromAPI = false)
+    {
+        isRefreshing = true;
+        StateHasChanged();
+        coins = await AppStorageService.GetCoinListAsync() ?? new List<CoinInfo>();
+        if (fromAPI)
+        {
+            var coinList = string.Join(',', coins.Select(coin => coin.Id).ToArray());
+            coinPrices = (coins.Count > 0) ? await CoinAPIService.GetCoinPriceInfo(coinList, localSettings.Currency, localSettings.PriceChangeInterval) as List<CoinPriceInfo> : new List<CoinPriceInfo>();
+            //  Set the cache of coins
+            await AppStorageService.SaveCoinTrackerCacheAsync(new CoinTrackerCache
+                {
+                    CacheTime = DateTimeOffset.Now,
+                    CoinPrices = coinPrices
+                });
+            Console.WriteLine("Data fetched from API");
+            lastUpdate = DateTime.Now.ToShortTimeString();
+        }
+        else
+        {
+            var coinCache = await AppStorageService.GetCoinTrackerCacheAsync() ?? null;
+            if (coinCache != null)
+            {
+                coinPrices = coinCache.CoinPrices.ToList();
+                lastUpdate = coinCache.CacheTime.LocalDateTime.ToShortTimeString();
+            }
+            else
+                coinPrices = new List<CoinPriceInfo>();
+            Console.WriteLine("Data fetched from Cache");
+        }
+
+        isRefreshing = false;
+        StateHasChanged();
+    }
+
+    private async void RefreshTimerOnElapsed(object sender, ElapsedEventArgs e)
+    {
+        await UpdateCoinInfo(true);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var id = await AppStorageService.GetIdAsync();
+
+        localSettings = (await AppStorageService.GetLocalSettingsAsync()) ?? new LocalSettings { RefreshInterval = 30, Currency = "GBP", PriceChangeInterval = "1d" };
+        var cacheInvalid = (await AppStorageService.IsCacheInvalidAsync());
+
+        await UpdateCoinInfo(cacheInvalid);
+        if (localSettings.AutoRefreshEnabled)
+        {
+            refreshTimer = new Timer
+                {
+                    Interval = (localSettings.RefreshInterval > 0 ? localSettings.RefreshInterval * 1000 : 30000),
+                    AutoReset = true
+                };
+            refreshTimer.Elapsed += RefreshTimerOnElapsed;
+            refreshTimer.Start();
+        }
+    }
+
+    private string TrendIndicator(string coinId)
+    {
+        var priceInfo = coinPrices.FirstOrDefault(coin => coin.Id == coinId);
+        if (priceInfo != null)
+        {
+            var priceChange = float.Parse(priceInfo.Intervals[localSettings.PriceChangeInterval].PriceChange);
+            return priceChange > 0 ? "<span class='oi oi-arrow-top' style='color: green'></span>" : "<span class='oi oi-arrow-bottom'  style='color: red'></span>";
+        }
+        else
+            return "";
+    }
+
+}

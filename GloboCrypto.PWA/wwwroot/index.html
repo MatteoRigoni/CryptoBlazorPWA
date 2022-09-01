@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>GloboCrypto.PWA</title>
+    <base href="/" />
+
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="GloboCrypto.PWA.styles.css" rel="stylesheet" />
+    <link href="manifest.json" rel="manifest" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="_content/Blazored.Toast/blazored-toast.min.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="alert" id="update-alert">
+        <span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>
+        <label><strong style="background-color: green; color: whitesmoke; padding: 4px;">Update!</strong> a new version is available - click to update.</label>
+    </div>
+    <div id="app" style="height:100%; width:100%">
+        <h1 style="color: whitesmoke; line-height: 100%; text-align: center; left:0; top: 25%; position: absolute; width: 100%">Loading...</h1>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+
+    <script language="javascript">
+        const bc = new BroadcastChannel('blazor-channel');
+        bc.onmessage = function (message) {
+            if (message && message.data === "new-version-found") {
+                let updateDiv = document.getElementById("update-alert");
+                updateDiv.addEventListener('click', () => {
+                    bc.postMessage("skip-waiting");
+                });
+                updateDiv.style.display = "block";
+            } else if (message && message.data === "reload-page") {
+                window.location.href = window.location.href;
+            }
+        }
+
+        window.DarkModeInterop = (function () {
+            const _changeTheme = function (isDark) {
+                if (isDark) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            };
+
+            return {
+                ChangeTheme: _changeTheme
+            };
+        })();
+
+    </script>
+
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+</body>
+
+</html>

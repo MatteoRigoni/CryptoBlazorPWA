@@ -1,0 +1,204 @@
+﻿@page "/settings"
+
+@using GloboCrypto.PWA.Services
+@using GloboCrypto.PWA.Models
+@using GloboCrypto.PWA.Extensions
+@using Majorsoft.Blazor.Components.Toggle
+@using GloboCrypto.Model.Notifications
+
+@inject ICoinAPIService CoinAPIService
+@inject NavigationManager NavigationManager
+@inject IAppStorageService AppStorageService
+@inject IJSRuntime JSRuntime
+
+<div id="homebutton" class="mb-2">
+    <span class="h1">Settings</span>
+    <button class="btn btn-primary btn-circle btn-lg float-end" @onclick="NavigateToHome" aria-label="Navigate to home"><span class="oi oi-home"></span></button>
+</div>
+
+@if (localSettings == null)
+{
+        <p><em>Fetching Settings...</em></p>
+}
+else
+{
+        <EditForm Model="@localSettings">
+            <DataAnnotationsValidator />
+            <div class="form-group" style="vertical-align: middle">
+                <ToggleSwitch @ref="toggleNotifications"
+                          Checked="@localSettings.NotificationsEnabled"
+                          OnColor="@ToggleSetting.OnColor"
+                          OffColor="@ToggleSetting.OffColor"
+                          Width="ToggleSetting.Width"
+                          Height="ToggleSetting.Height"
+                          HandleStyle="ToggleSetting.StyleType"
+                          Disabled="ToggleSetting.Disabled"
+                          OnToggleChanged="OnToggleNotifications">
+                </ToggleSwitch>
+                <label class="form-control-lg" style="font-size: 1.5rem">Push Notifications</label>
+                <ValidationMessage For="@(() => localSettings.AutoRefreshEnabled)" />
+            </div>
+            <div class="form-group" style="vertical-align: middle">
+                <ToggleSwitch @ref="toggleAutoRefresh"
+                          Checked="@localSettings.AutoRefreshEnabled"
+                          OnColor="@ToggleSetting.OnColor"
+                          OffColor="@ToggleSetting.OffColor"
+                          Width="ToggleSetting.Width"
+                          Height="ToggleSetting.Height"
+                          HandleStyle="ToggleSetting.StyleType"
+                          Disabled="ToggleSetting.Disabled"
+                          OnToggleChanged="OnToggleAutoRefresh">
+                </ToggleSwitch>
+                <label class="form-control-lg" style="font-size: 1.5rem">Auto Refresh</label>
+                <ValidationMessage For="@(() => localSettings.AutoRefreshEnabled)" />
+            </div>
+        @if (localSettings.AutoRefreshEnabled)
+        {
+                    <div class="form-group">
+                        <label class="form-control-lg" style="font-size: 1.5rem">Refresh Interval: @(localSettings.RefreshInterval.ToDuration())</label>
+                        <input type="range" class="slider" min="0" max="7" step="1" @bind="intervalIndex" @oninput="@(e => OnIntervalChanged(int.Parse(e.Value?.ToString())))" />
+                    </div>
+        }
+            <div class="form-group" style="vertical-align: middle; line-height: 1.5">
+                <ToggleSwitch @ref="toggleDarkMode"
+                          Checked="@localSettings.DarkModeEnabled"
+                          OnColor="@ToggleSetting.OnColor"
+                          OffColor="@ToggleSetting.OffColor"
+                          Width="ToggleSetting.Width"
+                          Height="ToggleSetting.Height"
+                          HandleStyle="ToggleSetting.StyleType"
+                          Disabled="ToggleSetting.Disabled"
+                          OnToggleChanged="OnToggleDarkMode">
+                </ToggleSwitch>
+                <label class="form-control-lg" style="font-size: 1.5rem">Dark Mode</label>
+                <ValidationMessage For="@(() => localSettings.DarkModeEnabled)" />
+            </div>
+            <div class="form-group" style="vertical-align: middle; line-height: 1.5">
+                Currency
+                <InputSelect @bind-Value="localSettings.Currency" class="form-control">
+                    <option value="GBP">British Pound</option>
+                    <option value="USD">US Dollar</option>
+                    <option value="EUR">Euro</option>
+                </InputSelect>
+            </div>
+            <div class="form-group" style="vertical-align: middle; line-height: 1.5">
+                Price Change Interval
+                <InputSelect @bind-Value="localSettings.PriceChangeInterval" class="form-control">
+                    <option value="1d">1 day</option>
+                    <option value="7d">7 days</option>
+                    <option value="30d">30 days</option>
+                    <option value="365d">365 days</option>
+                    <option value="ytd">Year to date</option>
+                </InputSelect>
+            </div>
+        </EditForm>
+}
+
+
+@code {
+    private LocalSettings localSettings;
+    private ToggleSwitch toggleNotifications;
+    private ToggleSwitch toggleAutoRefresh;
+    private ToggleSwitch toggleDarkMode;
+    private int intervalIndex;
+
+    private readonly long[] INTERVALS = { 30, 60, 120, 300, 600, 1200, 1800, 3600 };
+
+    private readonly ToggleSettings ToggleSetting = new ToggleSettings
+        {
+            OnColor = "DodgerBlue",
+            OffColor = "DarkGray",
+            Width = 50,
+            Height = 22,
+            IsChecked = true,
+            Disabled = false,
+            StyleType = ToggleSwitchStyle.Circle
+        };
+
+    private async Task NavigateToHome()
+    {
+        await SaveSettings();
+        NavigationManager.NavigateTo("/");
+    }
+
+    private int FindInterval(long val)
+    {
+        for (var i = 0; i < INTERVALS.Length; i++)
+        {
+            if (INTERVALS[i] == val)
+                return i;
+        }
+        return 0;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        localSettings = (await AppStorageService.GetLocalSettingsAsync()) ?? new LocalSettings { RefreshInterval = 30, Currency = "GBP", PriceChangeInterval = "1d" };
+        intervalIndex = FindInterval(localSettings.RefreshInterval);
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            await AppStorageService.SaveLocalSettingsAsync(localSettings);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private async void OnIntervalChanged(long val)
+    {
+        localSettings.RefreshInterval = INTERVALS[val];
+        await SaveSettings();
+    }
+
+    private async void OnToggleNotifications(bool val)
+    {
+        localSettings.NotificationsEnabled = val;
+        //_ = RequestNotificationSubscriptionAsync();
+        await SaveSettings();
+    }
+
+    //async Task RequestNotificationSubscriptionAsync()
+    //{
+    //    if (localSettings.NotificationsEnabled)
+    //    {
+    //        var coinSubs = await AppStorageService.GetCoinListAsync();
+    //        var coinIds = coinSubs.Select(coin => coin.Id).ToList();
+    //        var subscription = await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
+    //        if (subscription != null)
+    //        {
+    //            subscription.CoinIds = coinIds;
+    //            try
+    //            {
+    //                await CoinAPIService.SubscribeToNotifications(subscription); //- send subscription to the API
+    //            }
+    //            catch (Exception ex)
+    //            {
+    //            }
+    //        }
+    //    }
+    //    else
+    //    {
+    //        await JSRuntime.InvokeAsync<NotificationSubscription>("blazorPushNotifications.removeSubscription");
+    //    }
+    //}
+
+    private async void OnToggleAutoRefresh(bool val)
+    {
+        localSettings.AutoRefreshEnabled = val;
+        await SaveSettings();
+    }
+
+    private async void OnToggleDarkMode(bool val)
+    {
+        localSettings.DarkModeEnabled = val;
+        await JSRuntime.InvokeVoidAsync("DarkModeInterop.ChangeTheme", val);
+        await SaveSettings();
+    }
+
+}
